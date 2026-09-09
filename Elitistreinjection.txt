@@ -1,0 +1,9 @@
+Elitist reinjection
+Problem: Every E=200 iterations, regardless of stagnation, 
+reset the current working path back to best_path (not just track it) 
+before continuing to explore — a mild elitism strategy distinct from reheating.
+
+
+if totalIter % 200 == 0 and totalIter > 0:
+    path = best_path[:]
+    C_current = best_cost
