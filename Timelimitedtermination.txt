@@ -1,0 +1,16 @@
+Time-limited termination
+Problem: Add a time_limit parameter (seconds). 
+Terminate the outer while loop early if time.time() - start_time > time_limit, 
+regardless of T or MaxIter. Report how many iterations were completed within budget.
+
+
+def simulatedAnnealing(self, T0, alpha, Tmin, MaxIter, iterPerTemp=100,
+                        useGreedy=False, seed=None, time_limit=None):
+    ...
+    while T > Tmin and totalIter < MaxIter:
+        if time_limit is not None and (time.time() - start_time) > time_limit:
+            break
+        for i in range(iterPerTemp):
+            if time_limit is not None and (time.time() - start_time) > time_limit:
+                break
+            ...
