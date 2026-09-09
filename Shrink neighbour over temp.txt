@@ -1,0 +1,17 @@
+Shrinking neighborhood size over temperature
+Problem: Instead of a uniformly random segment length for generateNeighbor, 
+cap the max segment length proportional to current temperature: 
+max_len = max(2, int(N * T / T0)). Early (hot) iterations can flip large chunks; 
+late (cold) iterations only make small local tweaks.
+
+
+def generateNeighbor(self, path, T, T0):
+    max_len = max(2, int(self.N * T / T0))
+    index1 = random.randint(1, self.N - 2)
+    max_index2 = min(self.N - 1, index1 + max_len)
+    index2 = random.randint(index1 + 1, max_index2)
+    path[index1:index2+1] = path[index1:index2+1][::-1]
+    return path
+
+# call site:
+candidate = self.generateNeighbor(path[:], T, T0)
