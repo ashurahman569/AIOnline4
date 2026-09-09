@@ -1,0 +1,14 @@
+Threshold Accepting (alternative acceptance rule)
+Problem: Replace the Boltzmann acceptance exp(-Delta/T) with Threshold Accepting: 
+accept any candidate where Delta <= threshold, 
+and decay threshold geometrically like temperature. Compare final costs against classic SA.
+
+
+threshold = T0 * 0.1  # separate from T
+...
+if Delta <= threshold:
+    path = candidate
+    C_current = C_new
+    acceptedMoves += 1
+...
+threshold *= alpha   # decay alongside T
