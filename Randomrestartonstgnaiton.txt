@@ -1,0 +1,12 @@
+Random restarts on prolonged stagnation
+Problem: Different from reheating — if stagnation hits S=15, 
+don't reheat; instead discard the current path entirely and 
+restart from a fresh random tour at the current temperature, 
+keeping best_path/best_cost global.
+
+
+if stagnation >= S:
+    path = self.generateRandomTour()
+    C_current, _ = self.calculateTourCost(path)
+    stagnation = 0
+    restartCount += 1
