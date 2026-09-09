@@ -2,3 +2,18 @@ Tabu restriction on recent moves
 Problem: Maintain a tabu list of the last K=20 accepted moves (as (index1, index2) pairs).
 Skip generating a candidate that repeats a tabu'd move; if a random draw collides, 
 redraw up to 10 times.
+
+from collections import deque
+tabu = deque(maxlen=20)
+
+for i in range(iterPerTemp):
+    for _ in range(10):
+        index1 = random.randint(1, self.N - 2)
+        index2 = random.randint(index1 + 1, self.N - 1)
+        if (index1, index2) not in tabu:
+            break
+    candidate = path[:]
+    candidate[index1:index2+1] = candidate[index1:index2+1][::-1]
+    ...
+    if Delta <= 0 or random.random() < p:
+        tabu.append((index1, index2))
