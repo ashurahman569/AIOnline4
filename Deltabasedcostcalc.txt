@@ -1,0 +1,21 @@
+Delta-based cost computation (efficiency)
+Problem: calculateTourCost is O(N) per candidate. For a segment-reversal move, 
+cost change can be computed in O(1) by only looking at the 2 broken/2 new edges. 
+Implement deltaCostReverse(path, i, j) and use it instead of full recompute in the SA loop.
+
+def deltaCostReverse(self, path, i, j):
+    g = self.graph
+    a, b = path[i-1], path[i]
+    c, d = path[j], path[j+1] if j+1 < len(path) else path[0]
+    old = g[a][b] + g[c][d]
+    new = g[a][c] + g[b][d]
+    return new - old
+
+# in simulatedAnnealing loop:
+index1 = random.randint(1, self.N - 2)
+index2 = random.randint(index1 + 1, self.N - 1)
+Delta = self.deltaCostReverse(path, index1, index2)
+candidate = path[:]
+candidate[index1:index2+1] = candidate[index1:index2+1][::-1]
+C_new = C_current + Delta
+
