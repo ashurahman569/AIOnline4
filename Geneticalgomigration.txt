@@ -5,15 +5,123 @@ Every X=1000 total iterations, replace the worst chain's current path
 with the best chain's best_path ("migration").
 
 
-chains = [TSP() for _ in range(3)]
-for c in chains: c.copy(tsp)
-states = [{'path': c.generateRandomTour(), 'T': T0, 'best_cost': math.inf, 'best_path': None} for c in chains]
+New method — add to the TSP class
+python
+def parallelSA(self, T0, alpha, Tmin, MaxIter, iterPerTemp=100,
+               M=3, migrationInterval=1000, useGreedy=False, seed=None):
+    if seed is not None:
+        random.seed(seed)
 
-for step in range(0, MaxIter, iterPerTemp):
-    for idx, c in enumerate(chains):
-        # run one iterPerTemp block per chain, update states[idx]
-        ...
-    if step % 1000 == 0:
-        costs = [s['best_cost'] for s in states]
-        worst_i, best_i = costs.index(max(costs)), costs.index(min(costs))
-        states[worst_i]['path'] = states[best_i]['best_path'][:]
+    start_time = time.time()
+
+    # --- Initialize M independent chains ---
+    chains = []
+    for m in range(M):
+        if useGreedy:
+            self.visited = [False] * self.N   # reset since greedyTSP mutates self.visited
+            path = self.greedyTSP()
+        else:
+            path = self.generateRandomTour()
+
+        cost, _ = self.calculateTourCost(path)
+        chains.append({
+            'path': path[:],
+            'C_current': cost,
+            'T': T0,
+            'best_path': path[:],
+            'best_cost': cost,
+            'acceptedMoves': 0,
+            'worseAccepted': 0,
+        })
+
+    totalIter = 0
+    migrationCount = 0
+
+    # --- Main loop: all chains cool together, migrate periodically ---
+    while chains[0]['T'] > Tmin and totalIter < MaxIter:
+        for c in chains:
+            for i in range(iterPerTemp):
+                if totalIter + i >= MaxIter:
+                    break
+
+                candidate = self.generateNeighbor(c['path'][:])
+                C_new, _ = self.calculateTourCost(candidate)
+                Delta = C_new - c['C_current']
+
+                if Delta <= 0:
+                    c['path'] = candidate
+                    c['C_current'] = C_new
+                    c['acceptedMoves'] += 1
+                    if C_new < c['best_cost']:
+                        c['best_cost'] = C_new
+                        c['best_path'] = candidate[:]
+                else:
+                    p = math.exp(-Delta / c['T'])
+                    if random.random() < p:
+                        c['path'] = candidate
+                        c['C_current'] = C_new
+                        c['acceptedMoves'] += 1
+                        c['worseAccepted'] += 1
+
+            c['T'] *= alpha
+
+        totalIter += iterPerTemp
+
+        # --- Migration step ---
+        if totalIter % migrationInterval == 0:
+            costs = [c['best_cost'] for c in chains]
+            worst_idx = costs.index(max(costs))
+            best_idx = costs.index(min(costs))
+            if worst_idx != best_idx:
+                chains[worst_idx]['path'] = chains[best_idx]['best_path'][:]
+                chains[worst_idx]['C_current'] = chains[best_idx]['best_cost']
+                migrationCount += 1
+
+    end_time = time.time()
+
+    # --- Aggregate results across chains ---
+    best_costs = [c['best_cost'] for c in chains]
+    overall_best_idx = best_costs.index(min(best_costs))
+
+    self.psa_best_cost = chains[overall_best_idx]['best_cost']
+    self.psa_best_path = chains[overall_best_idx]['best_path']
+    self.psa_chain_costs = best_costs
+    self.psa_migration_count = migrationCount
+    self.psa_execution_time = end_time - start_time
+    self.psa_iterations = totalIter
+
+    return self.psa_best_path
+Demo main()
+python
+def main():
+    tsp = TSP()
+    tsp.readInput('input4.txt')
+
+    T0 = 100
+    alpha = 0.995
+    M = 3
+    migrationInterval = 1000
+
+    print(f"Running Parallel SA with M={M} chains, migration every {migrationInterval} iterations\n")
+
+    results = []
+    for run in range(5):
+        tsp_run = TSP()
+        tsp_run.copy(tsp)
+        best_path = tsp_run.parallelSA(T0, alpha, Tmin=0.001, MaxIter=100000,
+                                        iterPerTemp=100, M=M,
+                                        migrationInterval=migrationInterval,
+                                        useGreedy=True, seed=None)
+        cost, _ = tsp_run.calculateTourCost(best_path)
+        results.append(cost)
+        print(f"Run {run+1}: Best Cost = {cost}, "
+              f"Chain Costs = {tsp_run.psa_chain_costs}, "
+              f"Migrations = {tsp_run.psa_migration_count}, "
+              f"Time = {tsp_run.psa_execution_time:.4f}s")
+
+    print(f"\nBest Cost:    {min(results)}")
+    print(f"Average Cost: {sum(results)/len(results):.2f}")
+    print(f"Worst Cost:   {max(results)}")
+
+if __name__ == '__main__':
+    main()
