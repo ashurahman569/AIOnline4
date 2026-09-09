@@ -1,0 +1,19 @@
+Population-based parallel SA (multi-chain with exchange)
+Problem: Run M=3 independent SA chains simultaneously 
+(interleaved, not literally parallel threads). 
+Every X=1000 total iterations, replace the worst chain's current path 
+with the best chain's best_path ("migration").
+
+
+chains = [TSP() for _ in range(3)]
+for c in chains: c.copy(tsp)
+states = [{'path': c.generateRandomTour(), 'T': T0, 'best_cost': math.inf, 'best_path': None} for c in chains]
+
+for step in range(0, MaxIter, iterPerTemp):
+    for idx, c in enumerate(chains):
+        # run one iterPerTemp block per chain, update states[idx]
+        ...
+    if step % 1000 == 0:
+        costs = [s['best_cost'] for s in states]
+        worst_i, best_i = costs.index(max(costs)), costs.index(min(costs))
+        states[worst_i]['path'] = states[best_i]['best_path'][:]
