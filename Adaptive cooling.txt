@@ -1,0 +1,19 @@
+Adaptive cooling based on acceptance rate
+Problem: Instead of fixed alpha, adjust cooling per temperature step: 
+if acceptance rate in the last iterPerTemp iterations was >40%, 
+cool faster (alpha *= 0.98); if <10%, cool slower (alpha = min(alpha*1.02, 0.999)).
+
+while T > Tmin and totalIter < MaxIter:
+    acceptedThisTemp = 0
+    for i in range(iterPerTemp):
+        ...
+        if Delta <= 0 or random.random() < p:
+            acceptedThisTemp += 1
+        totalIter += 1
+
+    rate = acceptedThisTemp / iterPerTemp
+    if rate > 0.4:
+        alpha = max(alpha * 0.98, 0.80)
+    elif rate < 0.1:
+        alpha = min(alpha * 1.02, 0.999)
+    T *= alpha
