@@ -1,0 +1,25 @@
+Multiple neighbor operators
+Problem: Add two more move types — swap (exchange two cities) and 
+insertion (move one city to a new position) — and pick one operator uniformly 
+at random each iteration. Report which operator produced the best solution most often.
+
+def generateNeighborSwap(self, path):
+    i, j = random.sample(range(1, self.N), 2)
+    path[i], path[j] = path[j], path[i]
+    return path
+
+def generateNeighborInsertion(self, path):
+    i = random.randint(1, self.N - 1)
+    city = path.pop(i)
+    j = random.randint(1, self.N - 1)
+    path.insert(j, city)
+    return path
+
+# in loop:
+op = random.choice(['reverse', 'swap', 'insertion'])
+if op == 'reverse':
+    candidate = self.generateNeighbor(path[:])
+elif op == 'swap':
+    candidate = self.generateNeighborSwap(path[:])
+else:
+    candidate = self.generateNeighborInsertion(path[:])
