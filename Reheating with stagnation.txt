@@ -1,0 +1,83 @@
+Modify your simulatedAnnealing() main loop as follows:
+1. Keep track of bestCost (already done) and add a counter stagnation that counts the
+number of consecutive iterations in which bestCost did not improve.
+2. Whenever a strictly better solution is found, reset stagnation to 0.
+3. If stagnation reaches a threshold S (default S = 5), reheat: set T ←T0/2, reset
+stagnation to 0, and increment a counter reheatCount.
+4. Cap the number of reheats at R = 3 (after that, do no more reheats but continue until
+the iteration budget runs out).
+5. Everything else (neighbor operator, cooling schedule, acceptance rule) stays identical.
+def simulatedAnnealing(self, T0, alpha, Tmin, MaxIter, iterPerTemp=100, useGreedy=False, seed=None, S=5, R=3):
+    if seed is not None:
+        random.seed(seed)
+
+    start_time = time.time()
+
+    if useGreedy:
+        path = self.greedyTSP()
+    else:
+        path = self.generateRandomTour()
+
+    C_current, initial = self.calculateTourCost(path)
+    initial_cost = C_current
+
+    best_path = path[:]
+    best_cost = C_current
+
+    T = T0
+    totalIter = 0
+    acceptedMoves = 0
+    worseAccepted = 0
+
+    # --- NEW: reheating state ---
+    stagnation = 0
+    reheatCount = 0
+
+    while T > Tmin and totalIter < MaxIter:
+        for i in range(iterPerTemp):
+            if totalIter >= MaxIter:
+                break
+
+            candidate = self.generateNeighbor(path[:])
+            C_new, _ = self.calculateTourCost(candidate)
+            Delta = C_new - C_current
+
+            if Delta <= 0:
+                path = candidate
+                C_current = C_new
+                acceptedMoves += 1
+                if C_current < best_cost:
+                    best_cost = C_current
+                    best_path = path[:]
+                    stagnation = 0          # NEW: improved -> reset
+                else:
+                    stagnation += 1          # NEW: no improvement
+            else:
+                p = math.exp(-Delta / T)
+                if random.random() < p:
+                    path = candidate
+                    C_current = C_new
+                    acceptedMoves += 1
+                    worseAccepted += 1
+                stagnation += 1              # NEW: no improvement either way
+
+            # --- NEW: reheat check ---
+            if stagnation >= S and reheatCount < R:
+                T = T0 / 2
+                stagnation = 0
+                reheatCount += 1
+
+            totalIter += 1
+
+        T *= alpha
+
+    end_time = time.time()
+
+    self.sa_iterations = totalIter
+    self.sa_best_cost = best_cost
+    self.sa_accepted_moves = acceptedMoves
+    self.sa_worse_accepted = worseAccepted
+    self.sa_execution_time = end_time - start_time
+    self.sa_reheat_count = reheatCount   # NEW: expose for reporting
+
+    return best_path
